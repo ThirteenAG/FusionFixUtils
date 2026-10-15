@@ -1,0 +1,8 @@
+# Build output
+build/
+bin/
+.vs/
+*.user
+
+# Test dependencies, fetched by tools/fetch-test-deps.ps1
+tests/external/

@@ -1,0 +1,6 @@
+{
+  "format": "asi-settings",
+  "version": "0.1",
+  "plugin": { "name": "Draft" },
+  "settings": [ { "id": "MAIN.A", "type": "bool", "default": 1, "label": "A" } ]
+}

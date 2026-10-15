@@ -1,0 +1,12 @@
+{
+  "format": "asi-settings",
+  "version": "1.0",  "plugin": { "id": "Check", "name": "@name", "games": [ { "name": "Game", "exe": [ "game.exe" ] } ] },
+  "pages": [ { "id": "main", "title": "@main", "section": "graphics" }, { "id": "compat", "title": "@compat", "section": "compatibility" } ],  "settings": [
+    { "id": "MAIN.A", "type": "bool", "default": true, "label": "@a", "presets": { "vanilla": false, "recommended": true, "enhanced": true } },
+    { "id": "MAIN.TextLanguage", "type": "choice", "default": "auto", "label": "Text language", "page": "compat", "visibility": "editor",
+      "choices": [ { "value": "auto", "label": "Auto" }, { "value": "en", "label": "English" }, { "value": "pt-BR", "label": "Português (Brasil)" } ] },
+    { "id": "MAIN.Later", "type": "int", "default": 1, "label": "Later", "apply": "nextLevel", "futureField": 1 }
+  ],
+  "hosts": { "Check": { "anything": [ 1, 2 ] } },
+  "extensions": { "vendor": { "x": true } }
+}

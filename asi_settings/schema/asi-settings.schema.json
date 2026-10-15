@@ -1,0 +1,375 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ThirteenAG/FusionFixUtils/asi_settings/schema/asi-settings.schema.json",
+  "title": "ASI Settings description, 1.0",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "plugin",
+    "settings"
+  ],
+  "properties": {
+    "format": {
+      "const": "asi-settings"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[01]\\.[0-9]+$",
+      "description": "1.x; descriptions of the 0.x drafts are read as 1.0 (the validator warns)"
+    },
+    "plugin": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "$ref": "#/$defs/text"
+        },
+        "games": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "exe"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "exe": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/$defs/gameFile"
+                }
+              },
+              "launcher": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/gameFile"
+                }
+              }
+            }
+          }
+        },
+        "priority": {
+          "type": "number"
+        },
+        "version": {
+          "type": "string",
+          "description": "Console plugins only (experimental), which have no version resource"
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "title": {
+            "$ref": "#/$defs/text"
+          },
+          "section": {
+            "$ref": "#/$defs/section"
+          },
+          "join": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/setting"
+      }
+    },
+    "hosts": {
+      "type": "object"
+    },
+    "extensions": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "section": {
+      "type": "string",
+      "description": "display, graphics, camera, controls, gamepad, audio, gameplay, language, advanced, other, compatibility; unknown sections count as other"
+    },
+    "value": {
+      "type": [
+        "number",
+        "string",
+        "boolean"
+      ],
+      "description": "true and false only for bool settings, meaning 1 and 0"
+    },
+    "labelledValue": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$ref": "#/$defs/value"
+        },
+        "label": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "properties": {
+        "setting": {
+          "$ref": "#/$defs/id"
+        },
+        "equals": {
+          "$ref": "#/$defs/value"
+        },
+        "notEquals": {
+          "$ref": "#/$defs/value"
+        },
+        "in": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        "all": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "any": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "not": {
+          "$ref": "#/$defs/condition"
+        }
+      }
+    },
+    "setting": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[^.\\s]+\\.[^\\s]+$",
+          "maxLength": 128
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "type": "string",
+          "description": "bool, int, float, choice, string, path, key, color, action, info; unknown types fall back as described in SPEC.md"
+        },
+        "default": {
+          "$ref": "#/$defs/value"
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "unit": {
+          "type": "string"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/labelledValue"
+          }
+        },
+        "dynamic": {
+          "type": "boolean"
+        },
+        "special": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/labelledValue"
+          }
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/labelledValue"
+          }
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "folder": {
+          "type": "boolean"
+        },
+        "relativeTo": {
+          "enum": [
+            "game",
+            "plugin"
+          ]
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "keyboard",
+              "mouse",
+              "gamepad"
+            ]
+          }
+        },
+        "alpha": {
+          "type": "boolean"
+        },
+        "label": {
+          "$ref": "#/$defs/text"
+        },
+        "description": {
+          "$ref": "#/$defs/text"
+        },
+        "page": {
+          "$ref": "#/$defs/id"
+        },
+        "group": {
+          "$ref": "#/$defs/text"
+        },
+        "order": {
+          "type": "number"
+        },
+        "control": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "visibleIf": {
+          "$ref": "#/$defs/condition"
+        },
+        "enabledIf": {
+          "$ref": "#/$defs/condition"
+        },
+        "visibility": {
+          "enum": [
+            "menu",
+            "editor",
+            "file"
+          ]
+        },
+        "apply": {
+          "enum": [
+            "live",
+            "restart",
+            "nextLevel",
+            "menu"
+          ]
+        },
+
+        "presets": {
+          "type": "object",
+          "required": [
+            "vanilla",
+            "recommended",
+            "enhanced"
+          ],
+          "properties": {
+            "vanilla": {
+              "$ref": "#/$defs/value"
+            },
+            "recommended": {
+              "$ref": "#/$defs/value"
+            },
+            "enhanced": {
+              "$ref": "#/$defs/value"
+            }
+          },
+          "additionalProperties": false
+        },
+        "storage": {
+          "enum": [
+            "cfg",
+            "native"
+          ]
+        }
+      }
+    },
+    "gameFile": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "label": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
