@@ -1,0 +1,14 @@
+{
+  "format": "asi-settings",
+  "version": "1.0",
+  "plugin": { "id": "LinkA", "name": "Link A", "priority": 10 },
+  "settings": [
+    { "id": "MAIN.Gamma", "type": "bool", "default": 1, "label": "Gamma",
+      "presets": { "vanilla": 0, "recommended": 1, "enhanced": 1 } },
+    { "id": "MAIN.Level", "type": "int", "default": 3, "min": 0, "max": 10, "label": "Level",
+      "presets": { "vanilla": 0, "recommended": 3, "enhanced": 10 } },
+    { "id": "MAIN.Hidden", "type": "int", "default": 5, "min": 0, "max": 10, "label": "Hidden", "visibility": "editor",
+      "presets": { "vanilla": 0, "recommended": 5, "enhanced": 9 } },
+    { "id": "MAIN.Name", "type": "string", "default": "x", "label": "Name" }
+  ]
+}
