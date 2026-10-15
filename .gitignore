@@ -1,0 +1,12 @@
+# Build output
+build/
+bin/
+.vs/
+*.user
+
+# Test dependencies, fetched by tools/fetch-test-deps.ps1
+tests/external/
+
+# Shaders compiled by the fixes' builds next to their sources (aa/AntiAliasing.rc, aa/AntiAliasingD3D11.rc)
+aa/shaders/*.pso
+aa/shaders/d3d11/*.cso

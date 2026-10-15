@@ -1,0 +1,12 @@
+{
+  "format": "asi-settings",
+  "version": "1.0",
+  "plugin": { "id": "LinkB", "name": "Link B" },
+  "settings": [
+    { "id": "MAIN.Mode", "type": "choice", "default": 0, "label": "Mode",
+      "choices": [ { "value": 0, "label": "Zero" }, { "value": 1, "label": "One" }, { "value": 2, "label": "Two" } ],
+      "presets": { "vanilla": 0, "recommended": 0, "enhanced": 2 } },
+    { "id": "MAIN.Speed", "type": "float", "default": 1.5, "min": 0, "max": 4, "label": "Speed", "apply": "restart",
+      "presets": { "vanilla": 1, "recommended": 1.5, "enhanced": 4 } }
+  ]
+}

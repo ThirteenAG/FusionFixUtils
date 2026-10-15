@@ -1,0 +1,9 @@
+{
+  "format": "asi-settings",
+  "version": "1.0",
+  "plugin": { "id": "WatchC", "name": "Watch C" },
+  "settings": [
+    { "id": "MAIN.Level", "type": "int", "default": 3, "min": 0, "max": 10, "label": "Level" },
+    { "id": "MAIN.Name", "type": "string", "default": "x", "label": "Name" }
+  ]
+}

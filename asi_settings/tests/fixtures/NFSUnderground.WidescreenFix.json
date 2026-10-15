@@ -1,0 +1,153 @@
+{
+  "format": "asi-settings",
+  "version": "1.0",
+  "plugin": {
+    "name": "Widescreen Fix",
+    "priority": 100,
+    "games": [ { "name": "Need for Speed Underground", "exe": [ "speed.exe" ] } ]
+  },
+  "pages": [
+    { "id": "graphics", "title": "@page.graphics", "section": "graphics" },
+    { "id": "camera", "title": "@page.camera", "section": "camera" },
+    { "id": "gamepad", "title": "@page.gamepad", "section": "gamepad" },
+    { "id": "advanced", "title": "@page.advanced", "section": "advanced" }
+  ],
+  "settings": [
+    {
+      "id": "GRAPHICS.Scaling", "type": "choice", "default": 0,
+      "choices": [ { "value": 0, "label": "@scaling.xbox" }, { "value": 1, "label": "@scaling.correct" } ],
+      "label": "@scaling", "description": "@scaling.description",
+      "page": "graphics", "control": [ "segmented", "cycler" ]
+    },
+    {
+      "id": "GRAPHICS.FOV", "type": "float", "default": 0, "min": 0, "max": 20, "step": 1, "unit": "%",
+      "label": "@fov", "description": "@fov.description",
+      "page": "graphics", "control": [ "slider" ],
+      "presets": { "vanilla": 0, "recommended": 0, "enhanced": 10 }
+    },
+    {
+      "id": "GRAPHICS.ConsoleGamma", "type": "bool", "default": 1,
+      "label": "@consolegamma", "description": "@consolegamma.description",
+      "page": "graphics",
+      "presets": { "vanilla": 0, "recommended": 1, "enhanced": 1 }
+    },
+    {
+      "id": "GRAPHICS.SMAA", "type": "bool", "default": 0,
+      "label": "@smaa", "description": "@smaa.description",
+      "page": "graphics",
+      "presets": { "vanilla": 0, "recommended": 0, "enhanced": 1 }
+    },
+    {
+      "id": "GRAPHICS.HideAABug", "type": "choice", "default": 2,
+      "choices": [ { "value": 0, "label": "@off" }, { "value": 1, "label": "@hideaabug.topleft" }, { "value": 2, "label": "@hideaabug.all" } ],
+      "label": "@hideaabug", "description": "@hideaabug.description",
+      "page": "advanced", "visibility": "editor", "apply": "restart"
+    },
+    {
+      "id": "MAIN.FPSLimit", "type": "int", "default": -1, "min": -2, "max": 1000, "unit": "fps",
+      "special": [ { "value": -1, "label": "@fps.monitor" }, { "value": -2, "label": "@fps.twicemonitor" }, { "value": 0, "label": "@off" } ],
+      "suggestions": [ { "value": 30 }, { "value": 40 }, { "value": 50 }, { "value": 60 }, { "value": 75 }, { "value": 100 },
+                       { "value": 120 }, { "value": 144 }, { "value": 165 }, { "value": 200 }, { "value": 240 } ],
+      "label": "@fpslimit", "description": "@fpslimit.description",
+      "page": "graphics", "control": [ "cycler", "dropdown" ], "apply": "restart"
+    },
+    {
+      "id": "MAIN.WindowedMode", "type": "choice", "default": 0,
+      "choices": [ { "value": 0, "label": "@windowed.fullscreen" }, { "value": 1, "label": "@windowed.borderless" },
+                   { "value": 2, "label": "@windowed.border" }, { "value": 3, "label": "@windowed.resizable" },
+                   { "value": 4, "label": "@windowed.borderlessfullscreen" }, { "value": 5, "label": "@windowed.stretched" } ],
+      "label": "@windowed", "description": "@windowed.description",
+      "page": "graphics", "control": [ "dropdown", "cycler" ], "apply": "restart"
+    },
+    {
+      "id": "MAIN.SkipIntro", "type": "bool", "default": 1,
+      "label": "@skipintro", "description": "@skipintro.description",
+      "page": "graphics", "apply": "restart",
+      "presets": { "vanilla": 0, "recommended": 1, "enhanced": 1 }
+    },
+    {
+      "id": "LANGUAGE.Language", "type": "choice", "default": "English US", "dynamic": true,
+      "choices": [ { "value": "English US", "label": "English (US)" }, { "value": "English UK", "label": "English (UK)" },
+                   { "value": "French", "label": "Français" }, { "value": "German", "label": "Deutsch" },
+                   { "value": "Italian", "label": "Italiano" }, { "value": "Spanish", "label": "Español" },
+                   { "value": "Dutch", "label": "Nederlands" }, { "value": "Swedish", "label": "Svenska" },
+                   { "value": "Korean", "label": "Korean" }, { "value": "Chinese (Traditional)", "label": "Chinese (Traditional)" },
+                   { "value": "Russian", "label": "Russian" } ],
+      "label": "@language", "description": "@language.description",
+      "page": "graphics", "control": [ "dropdown", "cycler" ], "apply": "restart"
+    },
+    {
+      "id": "MAIN.ShowLangSelect", "type": "bool", "default": 0,
+      "label": "@showlangselect", "description": "@showlangselect.description",
+      "page": "advanced", "visibility": "editor", "apply": "restart"
+    },
+    {
+      "id": "MAIN.HudAspectRatioConstraint", "type": "string", "default": "Auto",
+      "special": [ { "value": "Auto", "label": "@auto" } ],
+      "suggestions": [ { "value": "16:9" }, { "value": "21:9" } ],
+      "label": "@hudaspect", "description": "@hudaspect.description",
+      "page": "advanced", "visibility": "editor", "apply": "restart"
+    },
+    {
+      "id": "MAIN.CustomUserFilesDirectoryInGameDir", "type": "path", "folder": true, "relativeTo": "game", "default": "0",
+      "special": [ { "value": "0", "label": "@savefolder.documents" } ],
+      "label": "@savefolder", "description": "@savefolder.description",
+      "page": "advanced", "visibility": "editor", "apply": "restart"
+    },
+    {
+      "id": "CAMERA.FreeLook", "type": "bool", "default": 1,
+      "label": "@freelook", "description": "@freelook.description",
+      "page": "camera",
+      "presets": { "vanilla": 0, "recommended": 1, "enhanced": 1 }
+    },
+    {
+      "id": "CAMERA.StickSensitivity", "type": "float", "default": 1.0, "min": 0.2, "max": 3.0, "step": 0.1, "decimals": 1,
+      "label": "@sticksensitivity", "page": "camera", "control": [ "slider" ],
+      "enabledIf": { "setting": "CAMERA.FreeLook", "equals": 1 }
+    },
+    {
+      "id": "CAMERA.MouseSensitivity", "type": "float", "default": 1.0, "min": 0.2, "max": 3.0, "step": 0.1, "decimals": 1,
+      "label": "@mousesensitivity", "page": "camera", "control": [ "slider" ],
+      "enabledIf": { "setting": "CAMERA.FreeLook", "equals": 1 }
+    },
+    {
+      "id": "CAMERA.InvertLook", "type": "bool", "default": 0,
+      "label": "@invertlook", "page": "camera",
+      "enabledIf": { "setting": "CAMERA.FreeLook", "equals": 1 }
+    },
+    {
+      "id": "CAMERA.OnlyAllowHorizontalStickMovement", "type": "bool", "default": 0,
+      "label": "@horizontalstick", "description": "@horizontalstick.description", "page": "camera",
+      "enabledIf": { "setting": "CAMERA.FreeLook", "equals": 1 }
+    },
+    {
+      "id": "CAMERA.ReturnDelay", "type": "float", "default": 3.0, "min": 0, "max": 10, "step": 0.5, "decimals": 1, "unit": "s",
+      "label": "@returndelay", "description": "@returndelay.description", "page": "camera", "control": [ "slider" ],
+      "enabledIf": { "setting": "CAMERA.FreeLook", "equals": 1 }
+    },
+    {
+      "id": "CAMERA.ReturnSpeed", "type": "float", "default": 2.0, "min": 0.5, "max": 5, "step": 0.5, "decimals": 1,
+      "label": "@returnspeed", "description": "@returnspeed.description", "page": "camera", "control": [ "slider" ],
+      "enabledIf": { "setting": "CAMERA.FreeLook", "equals": 1 }
+    },
+    {
+      "id": "GAMEPAD.GamepadIcons", "type": "choice", "default": 0,
+      "choices": [ { "value": 0, "label": "@icons.auto" }, { "value": 1, "label": "@icons.xbox" }, { "value": 2, "label": "@icons.playstation" } ],
+      "label": "@gamepadicons", "page": "gamepad", "control": [ "segmented", "cycler" ]
+    },
+    {
+      "id": "GAMEPAD.LeftStickDeadzone", "type": "float", "default": 10, "min": 0, "max": 50, "step": 1, "unit": "%",
+      "label": "@leftdeadzone", "description": "@deadzone.description", "page": "gamepad", "control": [ "slider" ]
+    },
+    {
+      "id": "GAMEPAD.RightStickDeadzone", "type": "float", "default": 10, "min": 0, "max": 50, "step": 1, "unit": "%",
+      "label": "@rightdeadzone", "description": "@deadzone.description", "page": "gamepad", "control": [ "slider" ]
+    }
+  ],
+  "hosts": {
+    "NFSUnderground.WidescreenFix": {
+      "pauseMenu": [ "GRAPHICS.Scaling", "GRAPHICS.FOV", "GRAPHICS.ConsoleGamma", "GRAPHICS.SMAA", "MAIN.FPSLimit",
+                     "MAIN.WindowedMode", "MAIN.SkipIntro", "CAMERA.FreeLook", "CAMERA.StickSensitivity" ]
+    }
+  }
+}
