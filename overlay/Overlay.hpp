@@ -156,7 +156,7 @@ namespace asi_overlay
             io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
             io.ConfigDebugHighlightIdConflicts = false; // never show ImGui's programmer popups to players
             // Noto Sans JP covers the common European and Japanese translations in addition to symbols. ImGui 1.92 loads glyphs on demand.
-            io.Fonts->AddFontFromMemoryCompressedTTF((void*)NotoSansJP_compressed_data, NotoSansJP_compressed_size, 16.0f);
+            io.Fonts->AddFontFromMemoryCompressedTTF((void*)NotoSansJP_Regular_compressed_data, NotoSansJP_Regular_compressed_size, 16.0f);
             // A bad extension page must not stop the game: no asserts or tooltips, the overlay recovers the stack.
             io.ConfigErrorRecoveryEnableAssert = false;
             io.ConfigErrorRecoveryEnableTooltip = false;

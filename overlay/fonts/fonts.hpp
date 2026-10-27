@@ -1,7 +1,8 @@
+#pragma once
 // File: 'NotoSansJP-Regular.ttf' (5731428 bytes)
-// Exported using binary_to_compressed_c.exe -u8 "NotoSansJP-Regular.ttf" NotoSansJP
-static const unsigned int NotoSansJP_compressed_size = 4125950;
-static const unsigned char NotoSansJP_compressed_data[4125950] =
+// Exported using binary_to_compressed_c.exe -u8 "NotoSansJP-Regular.ttf" NotoSansJP_Regular
+inline constexpr unsigned int NotoSansJP_Regular_compressed_size = 4125950;
+inline constexpr unsigned char NotoSansJP_Regular_compressed_data[4125950] =
 {
     87,188,0,0,0,0,0,0,0,87,116,100,0,4,0,0,37,0,1,0,0,0,19,130,4,46,4,0,48,66,65,83,69,251,87,106,192,0,0,2,184,130,21,8,56,228,71,68,69,70,0,25,1,2,0,0,1,76,0,0,0,28,71,80,79,83,229,
     99,85,174,0,0,84,112,0,0,164,106,71,83,85,66,175,12,171,117,0,0,11,224,0,0,72,142,79,83,47,50,146,235,253,191,130,63,32,88,130,47,40,96,83,84,65,84,120,146,108,221,130,63,32,240,130,
