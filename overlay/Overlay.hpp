@@ -1,6 +1,7 @@
 #pragma once
 #include "SettingsModel.hpp"
 #include "Extensions.hpp"
+#include "fonts/fonts.hpp"
 #include "MessageGate.hpp"
 #include "Supporter.hpp"
 #include <shellapi.h>
@@ -154,19 +155,8 @@ namespace asi_overlay
             io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
             io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
             io.ConfigDebugHighlightIdConflicts = false; // never show ImGui's programmer popups to players
-            // Segoe UI covers the common European translations. ImGui 1.92 loads glyphs on demand.
-            wchar_t system[MAX_PATH]{};
-            GetWindowsDirectoryW(system, MAX_PATH);
-            auto path = asi_settings::text::Narrow(std::wstring(system) + L"\\Fonts\\segoeui.ttf");
-            if (!io.Fonts->AddFontFromFileTTF(path.c_str(), 16.0f)) io.Fonts->AddFontDefault();
-            else
-            {
-                // Segoe UI Symbol for the markers (●, ›) that Segoe UI lacks
-                ImFontConfig merge;
-                merge.MergeMode = true;
-                auto symbols = asi_settings::text::Narrow(std::wstring(system) + L"\\Fonts\\seguisym.ttf");
-                io.Fonts->AddFontFromFileTTF(symbols.c_str(), 16.0f, &merge);
-            }
+            // Noto Sans JP covers the common European and Japanese translations in addition to symbols. ImGui 1.92 loads glyphs on demand.
+            io.Fonts->AddFontFromMemoryCompressedTTF((void*)NotoSansJP_Regular_compressed_data, NotoSansJP_Regular_compressed_size, 16.0f);
             // A bad extension page must not stop the game: no asserts or tooltips, the overlay recovers the stack.
             io.ConfigErrorRecoveryEnableAssert = false;
             io.ConfigErrorRecoveryEnableTooltip = false;
