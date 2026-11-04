@@ -1,6 +1,7 @@
 #pragma once
 #include "SettingsModel.hpp"
 #include "Extensions.hpp"
+#include "fonts/FallbackFont.hpp"
 #include "MessageGate.hpp"
 #include "Supporter.hpp"
 #include <shellapi.h>
@@ -155,18 +156,30 @@ namespace asi_overlay
             io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
             io.ConfigDebugHighlightIdConflicts = false; // never show ImGui's programmer popups to players
             // Segoe UI covers the common European translations. ImGui 1.92 loads glyphs on demand.
+            // Wine/Proton have no Segoe fonts: the embedded fallback font is used there.
             wchar_t system[MAX_PATH]{};
             GetWindowsDirectoryW(system, MAX_PATH);
-            auto path = asi_settings::text::Narrow(std::wstring(system) + L"\\Fonts\\segoeui.ttf");
-            if (!io.Fonts->AddFontFromFileTTF(path.c_str(), 16.0f)) io.Fonts->AddFontDefault();
-            else
+            auto fontFile = [&](const wchar_t* name) { return std::wstring(system) + L"\\Fonts\\" + name; };
+            auto exists = [](const std::wstring& file) { return GetFileAttributesW(file.c_str()) != INVALID_FILE_ATTRIBUTES; };
+            auto segoe = fontFile(L"segoeui.ttf");
+            auto symbols = fontFile(L"seguisym.ttf");
+            ImFont* font = nullptr;
+            if (exists(segoe))
+                font = io.Fonts->AddFontFromFileTTF(asi_settings::text::Narrow(segoe).c_str(), 16.0f);
+            if (font && exists(symbols))
             {
                 // Segoe UI Symbol for the markers (●, ›) that Segoe UI lacks
                 ImFontConfig merge;
                 merge.MergeMode = true;
-                auto symbols = asi_settings::text::Narrow(std::wstring(system) + L"\\Fonts\\seguisym.ttf");
-                io.Fonts->AddFontFromFileTTF(symbols.c_str(), 16.0f, &merge);
+                io.Fonts->AddFontFromFileTTF(asi_settings::text::Narrow(symbols).c_str(), 16.0f, &merge);
             }
+            if (!font)
+            {
+                ImFontConfig fallback;
+                fallback.FontDataOwnedByAtlas = false;
+                font = io.Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(FallbackFont_data), FallbackFont_size, 16.0f, &fallback);
+            }
+            if (!font) io.Fonts->AddFontDefault();
             // A bad extension page must not stop the game: no asserts or tooltips, the overlay recovers the stack.
             io.ConfigErrorRecoveryEnableAssert = false;
             io.ConfigErrorRecoveryEnableTooltip = false;
