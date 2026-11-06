@@ -736,10 +736,17 @@ namespace
         CHECK(asi_settings::ReadPluginFile(elf.wstring(), file, &error) && file.id == "Test.Ps2" && file.texts.sources.size() == 2 && file.texts.sources.count("pt-br"));
         doc.Open(std::move(file), {});
         CHECK(doc.CfgPath() == ps2 / L"Test.Ps2.ini");
-        // Description files win over the sections
+        // The sections win over description files left beside the module
         asi_settings::WriteFileAtomic(ps2 / L"Test.Ps2.asisettings.json", description({}, "Beside"));
-        CHECK(asi_settings::ReadPluginFile(elf.wstring(), file) && file.description.name == "Beside" && file.texts.sources.empty());
+        asi_settings::WriteFileAtomic(ps2 / L"Test.Ps2.asisettings.fr.json", "{}");
+        CHECK(asi_settings::ReadPluginFile(elf.wstring(), file) && file.description.name == "@plugin.name" && file.texts.sources.size() == 2 && !file.texts.sources.count("fr"));
+        // A module without them, or too large to read, leaves the files
+        asi_settings::WriteFileAtomic(elf, MakeElf({ { ".text", "x" } }));
+        CHECK(asi_settings::ReadPluginFile(elf.wstring(), file) && file.description.name == "Beside" && file.texts.sources.count("fr"));
+        asi_settings::WriteFileAtomic(elf, std::string(asi_settings::MaxConsoleModuleSize + 1, '\0'));
+        CHECK(asi_settings::ReadPluginFile(elf.wstring(), file) && file.description.name == "Beside");
         DeleteFileW((ps2 / L"Test.Ps2.asisettings.json").c_str());
+        DeleteFileW((ps2 / L"Test.Ps2.asisettings.fr.json").c_str());
 
         // ELF files that lie about their sections, or have none
         auto bad = ps2 / L"Bad.elf";

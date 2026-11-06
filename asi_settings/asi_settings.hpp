@@ -803,8 +803,8 @@ namespace asi_settings
         }
     }
 
-    // The description and translations of a console plugin as text: <module>.asisettings.json and
-    // <module>.asisettings.<tag>.json next to it when the first is there, otherwise the module's ELF sections
+    // The description and translations of a console plugin as text: the module's ELF sections when it has them, otherwise
+    // <module>.asisettings.json and <module>.asisettings.<tag>.json next to it
     inline bool ReadConsoleSources(const std::filesystem::path& module, std::string& description, Texts& texts, std::string* error = nullptr)
     {
         WIN32_FILE_ATTRIBUTE_DATA attributes{};
@@ -817,11 +817,16 @@ namespace asi_settings
         auto folder = module.parent_path();
         auto stem = module.stem().wstring();
         auto sidecar = folder / (stem + L".asisettings.json");
+        std::string elf, sectionsError;
+        if (detail::ReadBoundedFile(module, MaxConsoleModuleSize, elf, &sectionsError) && detail::ReadElfSections(elf, description, texts, &sectionsError))
+            return true;
         if (GetFileAttributesW(sidecar.c_str()) == INVALID_FILE_ATTRIBUTES)
         {
-            std::string elf;
-            return detail::ReadBoundedFile(module, MaxConsoleModuleSize, elf, error) && detail::ReadElfSections(elf, description, texts, error);
+            detail::SetError(error, sectionsError);
+            return false;
         }
+        description.clear();
+        texts = {};
         if (!detail::ReadBoundedFile(sidecar, MaxDescriptionSize, description, error))
             return false;
         // Translations: the exact name with a language tag; links, other names and anything past the limits are left out

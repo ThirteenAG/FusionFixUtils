@@ -688,8 +688,8 @@ module's file name without its extension. The runtime interface and the live lin
 effect when the game starts again. Their settings file follows the same format; they usually keep their existing name
 with `"file": "{name}.ini"` and update it in place (see [Writing](#the-settings-file)).
 
-- **Which one.** When `<plugin>.asisettings.json` exists, the files are read and the sections are not; otherwise the
-  sections. Sections may be padded with zero bytes.
+- **Which one.** When the module has an `.asisettings` section, the sections are read and the files are not; otherwise
+  the files. Sections may be padded with zero bytes.
 - **Reading.** Readers never run the module and never follow links or junctions to these files. The limits apply to
   each file and section ([Limits](#limits)); a translation file whose `<lang>` isn't a language tag is ignored.
 - **Settings file.** It stays in the plugin's folder: `storage.file` may use only `{name}` and `{plugin}`, is relative
