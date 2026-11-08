@@ -476,6 +476,18 @@ namespace
         CHECK(files.fallback.filename() == L"Renamed.cfg" && files.fallback.parent_path().filename() == L"plugins");
         CHECK(files.virtualStore == local / L"VirtualStore\\Program Files\\G\\plugins\\Renamed.cfg");
 
+        // A plugin loaded through a lowercase path still gets a settings file named like the plugin on disk
+        {
+            auto plugin = std::filesystem::current_path() / L"CaseTest.asi";
+            asi_settings::WriteFileAtomic(plugin, "x");
+            auto lowered = plugin.parent_path() / L"casetest.asi";
+            CHECK(asi_settings::detail::OnDiskName(lowered).filename() == L"CaseTest.asi");
+            d.storageFile = "{name}.cfg";
+            CHECK(asi_settings::ResolveStorage(d, { asi_settings::detail::OnDiskName(lowered), L"C:\\G\\game.exe" }).filename() == L"CaseTest.cfg");
+            CHECK(asi_settings::detail::OnDiskName(plugin.parent_path() / L"missing.asi").filename() == L"missing.asi");
+            DeleteFileW(plugin.c_str());
+        }
+
         // Writable folders, judged with the standard token also when the test runs elevated
         wchar_t windows[MAX_PATH];
         GetSystemDirectoryW(windows, MAX_PATH);

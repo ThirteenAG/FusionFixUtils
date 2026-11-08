@@ -686,6 +686,18 @@ namespace asi_settings
                 *error = std::move(text);
         }
 
+        // The path with its file name written as it is on disk. GetModuleFileName returns the name in the case the loader
+        // asked for, and some loaders lowercase it, which would give the settings file a lowercase name.
+        inline std::filesystem::path OnDiskName(const std::filesystem::path& file)
+        {
+            WIN32_FIND_DATAW found{};
+            const HANDLE search = FindFirstFileExW(file.c_str(), FindExInfoBasic, &found, FindExSearchNameMatch, nullptr, 0);
+            if (search == INVALID_HANDLE_VALUE)
+                return file;
+            FindClose(search);
+            return file.parent_path() / found.cFileName;
+        }
+
         // A regular file read whole when it has at most limit bytes; a link or junction is never followed
         inline bool ReadBoundedFile(const std::filesystem::path& path, size_t limit, std::string& out, std::string* error)
         {
@@ -1743,7 +1755,7 @@ namespace asi_settings
 
             wchar_t path[MAX_PATH * 4] = {};
             GetModuleFileNameW(module, path, DWORD(std::size(path)));
-            locations.plugin = path;
+            locations.plugin = detail::OnDiskName(path);
             GetModuleFileNameW(nullptr, path, DWORD(std::size(path)));
             locations.exe = path;
             storage = ResolveStorageFiles(file.description, locations);
