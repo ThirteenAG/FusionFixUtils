@@ -396,8 +396,8 @@ the file looks the same whoever wrote it last.
 ; Change the settings here or in FusionFixHub; fixes with an in-game menu change them there too.
 
 [GRAPHICS]
-; Field of View: Extra field of view of the driving cameras. 0 to 20%. Default: 0
-FOV = 10
+; Field of View: Extra field of view of the driving cameras. 0.0 to 20.0%. Default: 0.0
+FOV = 10.0
 
 ; Console Gamma: deeper contrast, like the Xbox 360 version. 0 = Off, 1 = On. Default: 1
 ConsoleGamma = 1
@@ -417,7 +417,8 @@ HideAABug = 2
   comments behind values).
 - Values may be quoted: `"..."` with `\"` and `\\` as escapes. Quoting keeps leading and trailing spaces and `;`.
 - `bool`: `0`/`1`, also `true`/`false`, `on`/`off`, `yes`/`no`. Numbers: decimal, `0x` hexadecimal for `int`, `.` as the
-  decimal separator. `key`: a key name (`F2`, `Escape`, `A`, `Pad.A`, `Mouse.Left`) or a virtual-key code (`0x71`).
+  decimal separator. A `float` may be written without a `.` (`1`); an `int` written with one reads only when it's a
+  whole number (`1.0` is 1, `1.5` can't be read). `key`: a key name (`F2`, `Escape`, `A`, `Pad.A`, `Mouse.Left`) or a virtual-key code (`0x71`).
 - A value that can't be read counts as missing: the default applies, and the line is kept as it is until the setting
   is changed.
 
@@ -442,7 +443,9 @@ HideAABug = 2
 - Keys the description doesn't know are kept, at the end of their section (after the advanced and compatibility
   settings), unchanged. Sections the description doesn't have are kept at the end of the file,
   keys outside any section after the two header lines. A key that is an alias of a setting isn't kept: its value is written under the setting's id.
-- Numbers are written without needless digits (`0.5`, not `0.500000`), strings quoted only when needed.
+- Numbers are written without needless digits (`0.5`, not `0.500000`); the numbers of a `float` setting (value, range,
+  special values, default) always have a `.`, so `1.0` and `0.0`, while `int` and `bool` numbers have none. Strings are
+  quoted only when needed.
 - Write to a temporary file in the same folder and replace the old one, so that a crash never leaves half a file.
 - **Updating in place** is allowed for writers with tight limits, such as a proxy DLL that runs before the plugin
   (GTA IV's `d3d9.dll` changing the graphics API after a failure), console plugins and emulator services: they

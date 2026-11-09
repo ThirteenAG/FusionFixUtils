@@ -125,6 +125,22 @@ namespace asi_settings
             return std::string(buffer, r.ptr);
         }
 
+        // A float's text: the shortest that reads back the same, always with a '.' so it can't be taken for an int
+        inline std::string FormatFloat(double value)
+        {
+            float f = float(value) + 0.0f;     // -0 is 0
+            if (!std::isfinite(f))
+                return FormatNumber(value);
+            if (std::floor(f) == f && std::fabs(f) < 1e15f)
+                return std::to_string(int64_t(f)) + ".0";
+            char buffer[64];
+            auto r = std::to_chars(buffer, buffer + sizeof(buffer), f, std::chars_format::fixed);
+            std::string out(buffer, r.ptr);
+            if (out.find('.') == std::string::npos)
+                out += ".0";
+            return out;
+        }
+
         // snprintf-like copy for the runtime interface
         inline int32_t CopyOut(std::string_view value, char* buffer, uint32_t size)
         {
@@ -957,6 +973,18 @@ namespace asi_settings
             if (t.empty())
                 return false;
             bool hex = t.size() > 2 && t[0] == '0' && (t[1] == 'x' || t[1] == 'X');
+            // A whole number written like a float ("1.0") reads as that number; a fraction doesn't
+            if (!hex && t.find('.') != std::string::npos)
+            {
+                if (t.find_first_not_of("0123456789+-.") != std::string::npos)
+                    return false;
+                char* end = nullptr;
+                double v = std::strtod(t.c_str(), &end);
+                if (end != t.c_str() + t.size() || !std::isfinite(v) || std::floor(v) != v || std::fabs(v) > 2147483647.0)
+                    return false;
+                out = int(v);
+                return true;
+            }
             // Decimal with an optional sign, or 0x and hexadecimal digits only (SPEC.md, Reading)
             for (size_t i = hex ? 2 : 0; i < t.size(); ++i)
             {
@@ -1009,6 +1037,14 @@ namespace asi_settings
             if (v.IsString()) return v.string;
             return {};
         }
+
+        // A value of the setting as text: numbers of a float setting always with a '.' (JSON's 1 is 1.0 there)
+        inline std::string ValueToText(const Setting& s, const json::Value& v)
+        {
+            if (s.FloatValued() && v.IsNumber())
+                return text::FormatFloat(v.number);
+            return JsonToText(v);
+        }
     }
 
     // The value as text in the settings file's syntax (unquoted)
@@ -1018,7 +1054,7 @@ namespace asi_settings
         if (s.StringValued())
             return slot.stringValue;
         if (s.FloatValued())
-            return text::FormatNumber(slot.floatValue);
+            return text::FormatFloat(slot.floatValue);
         return std::to_string(slot.intValue);
     }
 
@@ -1267,7 +1303,7 @@ namespace asi_settings
                 std::string t;
                 for (auto& l : list)
                 {
-                    auto value = detail::JsonToText(l.value);
+                    auto value = detail::ValueToText(s, l.value);
                     auto label = l.label.empty() ? std::string() : english.Resolve(l.label);
                     if (skipBare && (label.empty() || text::IEquals(label, value)))
                         continue;
@@ -1283,7 +1319,10 @@ namespace asi_settings
                 case Type::Int:
                 case Type::Float:
                     if (s.min && s.max)
-                        values = text::FormatNumber(*s.min) + " to " + text::FormatNumber(*s.max) + (s.unit.empty() ? "" : (s.unit == "°" || s.unit == "%" ? "" : " ") + s.unit);
+                    {
+                        auto number = [&](double v) { return s.FloatValued() ? text::FormatFloat(v) : text::FormatNumber(v); };
+                        values = number(*s.min) + " to " + number(*s.max) + (s.unit.empty() ? "" : (s.unit == "°" || s.unit == "%" ? "" : " ") + s.unit);
+                    }
                     break;
                 case Type::Color: values = "#RRGGBB or #RRGGBBAA"; break;
                 default: break;
@@ -1298,7 +1337,7 @@ namespace asi_settings
             };
             if (!values.empty())
                 sentence(values);
-            auto defaultText = detail::JsonToText(s.defaultValue);
+            auto defaultText = detail::ValueToText(s, s.defaultValue);
             sentence("Default: " + (defaultText.empty() ? std::string("empty") : defaultText));
             if (s.apply == "restart")
                 out += " (after restart)";
@@ -1887,7 +1926,7 @@ namespace asi_settings
                     auto& p = slot.setting->presets;
                     if (!slot.setting->InPresets())
                         continue;
-                    auto value = detail::JsonToText((*p)[int(preset)]);
+                    auto value = detail::ValueToText(*slot.setting, (*p)[int(preset)]);
                     if (value != FormatValue(slot))
                     {
                         changes.emplace_back(slot.setting->id, value);
@@ -2135,9 +2174,9 @@ namespace asi_settings
             for (auto& c : s.choices)
                 out.push_back(detail::JsonToText(c.value));
             for (auto& c : s.special)
-                out.push_back(detail::JsonToText(c.value));
+                out.push_back(detail::ValueToText(s, c.value));
             for (auto& c : s.suggestions)
-                out.push_back(detail::JsonToText(c.value));
+                out.push_back(detail::ValueToText(s, c.value));
             return out;
         }
 
@@ -2159,7 +2198,7 @@ namespace asi_settings
             auto it = checks.find(text::ToLower(slot.setting->id));
             if (it != checks.end() && it->second.usable && !it->second.usable(FormatValue(slot)))
             {
-                std::vector<std::string> order = { detail::JsonToText(slot.setting->defaultValue) };
+                std::vector<std::string> order = { detail::ValueToText(*slot.setting, slot.setting->defaultValue) };
                 for (auto& v : Candidates(*slot.setting))
                     order.push_back(v);
                 for (auto& v : order)
@@ -3446,7 +3485,7 @@ namespace asi_settings
                     std::string current;
                     if (GetValue(*k, setting.id, current) >= 0 && detail::JsonEquals(wanted, current, !setting.StringValued()))
                         continue;
-                    int32_t r = k->api->Set(setting.id.c_str(), detail::JsonToText(wanted).c_str());
+                    int32_t r = k->api->Set(setting.id.c_str(), detail::ValueToText(setting, wanted).c_str());
                     if (r >= 0)
                     {
                         changed += (changed.size() > 1 ? "," : "") + detail::JsonQuote(setting.id);
@@ -3774,7 +3813,7 @@ namespace asi_settings
                 auto& p = slot.setting->presets;
                 if (!slot.setting->InPresets())
                     continue;
-                auto value = detail::JsonToText((*p)[int(preset)]);
+                auto value = detail::ValueToText(*slot.setting, (*p)[int(preset)]);
                 if (!slot.unread.empty() || !detail::JsonEquals((*p)[int(preset)], FormatValue(slot), !slot.setting->StringValued()))
                     out.emplace_back(slot.setting, value);
             }

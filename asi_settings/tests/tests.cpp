@@ -129,6 +129,61 @@ namespace
         CHECK(!ParseInt("0x-1", i) && !ParseInt("0x0x1", i) && !ParseInt("0x", i) && !ParseInt("-", i) && !ParseInt("1 2", i) && !ParseInt("1.5", i));
         CHECK(ParseFloat("1.5", f) && f == 1.5f && ParseFloat(".5", f) && ParseFloat("-2e1", f) && f == -20.0f);
         CHECK(!ParseFloat("0x10", f) && !ParseFloat("inf", f) && !ParseFloat("nan", f) && !ParseFloat("1,5", f) && !ParseFloat("1.2.3", f));
+        // A float written like an int reads; an int written like a float reads when it's a whole number
+        CHECK(ParseFloat("1", f) && f == 1.0f && ParseInt("1.0", i) && i == 1 && ParseInt("-2.00", i) && i == -2 && ParseInt("30.", i) && i == 30);
+        CHECK(!ParseInt("0.5", i) && !ParseInt("1.0.0", i) && !ParseInt("1e2", i) && !ParseInt("1.0e2", i) && !ParseInt("5000000000.0", i));
+
+        // Floats are written with a '.', in their shortest form; ints without one
+        using asi_settings::text::FormatFloat, asi_settings::text::FormatNumber;
+        CHECK(FormatFloat(1) == "1.0" && FormatFloat(0) == "0.0" && FormatFloat(-2) == "-2.0" && FormatFloat(10000) == "10000.0");
+        CHECK(FormatFloat(1.5) == "1.5" && FormatFloat(0.1f) == "0.1" && FormatFloat(0.2) == "0.2" && FormatFloat(1.0 / 3.0) == "0.33333334");
+        CHECK(FormatFloat(0.00001f) == "0.00001" && FormatFloat(1.1f) == "1.1");
+        CHECK(FormatFloat(123456789.0) == "123456792.0" && FormatFloat(1e20) == "100000002004087734272.0" && FormatFloat(-0.0) == "0.0");
+        CHECK(FormatNumber(1) == "1" && FormatNumber(-1) == "-1" && FormatNumber(0.5) == "0.5");
+    }
+
+    // The numbers of a float setting in the file have a '.', also when the description writes them like ints; the
+    // numbers of int, bool and numeric choice settings don't
+    void FloatsInCfg()
+    {
+        asi_settings::Description d;
+        CHECK(asi_settings::ParseDescription(R"({"format":"asi-settings","version":"0.1","plugin":{"name":"T"},"settings":[
+            {"id":"MAIN.Size","type":"float","default":1,"min":0,"max":4,"step":0.1,"label":"Size","description":"Light size"},
+            {"id":"MAIN.Distance","type":"float","default":0,"min":0,"max":10000,"unit":"m","special":[{"value":0,"label":"Auto"}],"label":"Distance"},
+            {"id":"MAIN.Speed","type":"float","default":1.25,"min":0.5,"max":2.5,"label":"Speed"},
+            {"id":"MAIN.Count","type":"int","default":2,"min":0,"max":8,"special":[{"value":-1,"label":"Auto"}],"label":"Count"},
+            {"id":"MAIN.Mode","type":"choice","default":1,"choices":[{"value":0,"label":"Off"},{"value":1,"label":"On"}],"label":"Mode"},
+            {"id":"MAIN.Flag","type":"bool","default":1,"label":"Flag"}]})", d));
+        std::vector<asi_settings::Slot> slots;
+        for (auto& s : d.settings)
+        {
+            asi_settings::Slot slot;
+            slot.setting = &s;
+            asi_settings::SetDefault(slot);
+            slots.push_back(std::move(slot));
+        }
+        asi_settings::Texts english;
+        auto text = asi_settings::WriteCfg(d, "T", english, slots, nullptr);
+        CHECK(text.find("; Size: Light size. 0.0 to 4.0. Default: 1.0\r\nSize = 1.0\r\n") != std::string::npos);
+        CHECK(text.find("; Distance. 0.0 to 10000.0 m, 0.0 = Auto. Default: 0.0\r\nDistance = 0.0\r\n") != std::string::npos);
+        CHECK(text.find("; Speed. 0.5 to 2.5. Default: 1.25\r\nSpeed = 1.25\r\n") != std::string::npos);
+        CHECK(text.find("; Count. 0 to 8, -1 = Auto. Default: 2\r\nCount = 2\r\n") != std::string::npos);
+        CHECK(text.find("; Mode. 0 = Off, 1 = On. Default: 1\r\nMode = 1\r\n") != std::string::npos);
+        CHECK(text.find("; Flag. 0 = Off, 1 = On. Default: 1\r\nFlag = 1\r\n") != std::string::npos);
+
+        // An older file: a float without '.', ints with ".0"; an int with a fraction can't be read
+        auto previous = asi_settings::ParseCfg("[MAIN]\r\nSize = 2\r\nCount = 3.0\r\nMode = 0.0\r\n");
+        for (auto& slot : slots)
+        {
+            if (auto v = previous.Find("MAIN", slot.setting->key))
+                CHECK(asi_settings::ParseValue(slot, *v, false));
+        }
+        CHECK(slots[0].floatValue == 2.0f && slots[3].intValue == 3 && slots[4].intValue == 0);
+        CHECK(asi_settings::FormatValue(slots[0]) == "2.0" && asi_settings::FormatValue(slots[3]) == "3");
+        CHECK(!asi_settings::ParseValue(slots[3], "3.5", false) && slots[3].intValue == 3);
+        text = asi_settings::WriteCfg(d, "T", english, slots, &previous);
+        CHECK(text.find("Size = 2.0\r\n") != std::string::npos && text.find("Count = 3\r\n") != std::string::npos &&
+            text.find("Mode = 0\r\n") != std::string::npos);
     }
 
     void CfgParsing()
@@ -320,7 +375,7 @@ namespace
         // Written in full on first load, with comments
         auto text = Cfg();
         CHECK(text.find("[GRAPHICS]\r\n") != std::string::npos);
-        CHECK(text.find("; Field of View: Extra field of view of the driving cameras. 0 to 20%. Default: 0\r\nFOV = 0\r\n") != std::string::npos);
+        CHECK(text.find("; Field of View: Extra field of view of the driving cameras. 0.0 to 20.0%. Default: 0.0\r\nFOV = 0.0\r\n") != std::string::npos);
         CHECK(text.find("SkipIntro = 1") != std::string::npos);
         CHECK(text.find("(after restart)") != std::string::npos);
         // Advanced settings after the menu settings of their section
@@ -336,7 +391,7 @@ namespace
 
         // Changes through the class
         CHECK(settings.Set("GRAPHICS.FOV", "10") == ASI_SETTINGS_OK && fov == 10.0f);
-        CHECK(Cfg().find("FOV = 10\r\n") != std::string::npos);
+        CHECK(Cfg().find("FOV = 10.0\r\n") != std::string::npos);
         CHECK(settings.Set("GRAPHICS.FOV", "30") == ASI_SETTINGS_INVALID_VALUE && fov == 10.0f);
         CHECK(settings.Set("GRAPHICS.SMAA", "maybe") == ASI_SETTINGS_INVALID_VALUE);
         CHECK(settings.Set("GRAPHICS.SMAA", "on") == ASI_SETTINGS_OK && settings.Int("GRAPHICS.SMAA") == 1);
@@ -384,7 +439,7 @@ namespace
         CHECK(text.find("SMAA = maybe") != std::string::npos);
         CHECK(text.find("MyOwnKey = 42") != std::string::npos);
         CHECK(text.find("[OTHERTOOL]\r\nX = y") != std::string::npos);
-        CHECK(text.find("FOV = 15\r\n") != std::string::npos);
+        CHECK(text.find("FOV = 15.0\r\n") != std::string::npos);
         CHECK(text.find("ConsoleGamma = 1") != std::string::npos);   // missing keys written with their defaults
 
         // The export, as a menu host sees it
@@ -395,10 +450,10 @@ namespace
         if (api)
         {
             char tiny[2];
-            CHECK(api->Get("GRAPHICS.FOV", tiny, sizeof(tiny)) == 2 && std::string(tiny) == "1");
+            CHECK(api->Get("GRAPHICS.FOV", tiny, sizeof(tiny)) == 4 && std::string(tiny) == "1");
             char value[32];
-            CHECK(api->Get("GRAPHICS.FOV", value, sizeof(value)) == 2 && std::string(value) == "15");
-            CHECK(api->Get("GRAPHICS.FOV", nullptr, 0) == 2);
+            CHECK(api->Get("GRAPHICS.FOV", value, sizeof(value)) == 4 && std::string(value) == "15.0");
+            CHECK(api->Get("GRAPHICS.FOV", nullptr, 0) == 4);
             static int notified = 0;
             int token = api->Subscribe([](void*, const char* id) { if (std::string(id) == "GRAPHICS.FOV") ++notified; }, nullptr);
             CHECK(token > 0);
@@ -571,7 +626,7 @@ namespace
         asi_settings::Document doc;
         doc.Open(std::move(found[0]), gameExe);
         CHECK(!doc.CfgExists() && doc.CfgPath() == game / L"scripts" / L"Test.cfg");
-        CHECK(doc.Get("GRAPHICS.FOV") == "0" && doc.Get("LANGUAGE.Language") == "English US");
+        CHECK(doc.Get("GRAPHICS.FOV") == "0.0" && doc.Get("LANGUAGE.Language") == "English US");
         CHECK(doc.CurrentPreset() == asi_settings::Preset::Recommended);
         CHECK(doc.Set("GRAPHICS.FOV", "30") == ASI_SETTINGS_INVALID_VALUE);
         CHECK(doc.Set("GRAPHICS.FOV", "12.5") == ASI_SETTINGS_OK && doc.Get("GRAPHICS.FOV") == "12.5");
@@ -586,7 +641,7 @@ namespace
 
         // A hand edit: unknown keys kept, an unreadable value kept as it is and shown as such
         asi_settings::WriteFileAtomic(game / L"scripts" / L"Test.cfg", "[GRAPHICS]\r\nFOV = 3\r\nSMAA = maybe\r\nMine = 1\r\n[CAMERA]\r\nFreeLook = 0\r\n");
-        CHECK(doc.Read() && doc.Get("GRAPHICS.FOV") == "3" && doc.Get("GRAPHICS.SMAA") == "maybe");
+        CHECK(doc.Read() && doc.Get("GRAPHICS.FOV") == "3.0" && doc.Get("GRAPHICS.SMAA") == "maybe");
         CHECK(doc.Find("GRAPHICS.SMAA")->unread == "maybe" && doc.Get("LANGUAGE.Language") == "English US");
         CHECK(!doc.Enabled("CAMERA.StickSensitivity") && doc.Visible("CAMERA.StickSensitivity"));
         CHECK(doc.FindKey("graphics", "fov") == doc.GetDescription().Find("GRAPHICS.FOV") && !doc.FindKey("GRAPHICS", "Mine"));
@@ -598,13 +653,13 @@ namespace
         auto changes = doc.PresetChanges(asi_settings::Preset::Enhanced);
         CHECK(std::any_of(changes.begin(), changes.end(), [](auto& c) { return c.first->id == "GRAPHICS.SMAA" && c.second == "1"; }));
         CHECK(!doc.ApplyPreset(asi_settings::Preset::Enhanced));               // only live settings change
-        CHECK(doc.CurrentPreset() == asi_settings::Preset::Enhanced && doc.Get("GRAPHICS.SMAA") == "1" && doc.Get("GRAPHICS.FOV") == "10");
+        CHECK(doc.CurrentPreset() == asi_settings::Preset::Enhanced && doc.Get("GRAPHICS.SMAA") == "1" && doc.Get("GRAPHICS.FOV") == "10.0");
         CHECK(doc.Enabled("CAMERA.StickSensitivity"));
         CHECK(doc.PresetChanges(asi_settings::Preset::Enhanced).empty());
 
         // Text from an editor's text view
-        doc.ReadText("[GRAPHICS]\nFOV = 7\n");
-        CHECK(doc.Get("GRAPHICS.FOV") == "7" && doc.Get("GRAPHICS.SMAA") == "0" && doc.Find("GRAPHICS.FOV")->stored);
+        doc.ReadText("[GRAPHICS]\nFOV = 7\n[MAIN]\nFPSLimit = 30.0\n");
+        CHECK(doc.Get("MAIN.FPSLimit") == "30" && doc.Get("GRAPHICS.FOV") == "7.0" && doc.Get("GRAPHICS.SMAA") == "0" && doc.Find("GRAPHICS.FOV")->stored);
 
         CHECK(!asi_settings::RunsAsOtherUser());
         std::filesystem::remove_all(game, ec);
@@ -977,7 +1032,7 @@ namespace
         // A hand edit of B's file: B doesn't serve the link, it watches its own file all the same
         auto cfgB = folder / L"LinkPluginB.cfg";
         CHECK(WriteInPlace(cfgB, Replaced(asi_settings::ReadFileText(cfgB).value_or(""), "Speed = 2.5\r\n", "Speed = 3\r\n")));
-        CHECK(client.Event("LinkB", "MAIN.Speed") == "3");
+        CHECK(client.Event("LinkB", "MAIN.Speed") == "3.0");
         CHECK(setB("MAIN.Speed", "2.5") == ASI_SETTINGS_OK && client.Event("LinkB", "MAIN.Speed") == "2.5");
 
         // Availability: Mode 2 can't be used now, its choices leave it out
@@ -1162,6 +1217,7 @@ int wmain()
     Numbers();
     CfgParsing();
     CfgOrder();
+    FloatsInCfg();
     PresetsMenuOnly();
     Compatibility();
     Plugin();
