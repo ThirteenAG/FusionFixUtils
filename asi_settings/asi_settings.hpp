@@ -1880,8 +1880,22 @@ namespace asi_settings
         // (ASI_SETTINGS_NOT_NOW), unless force: presets store them as usual, the value in effect falls back.
         int32_t Set(std::string_view id, std::string_view value, bool force = false)
         {
+            return SetValue(id, value, force, std::nullopt);
+        }
+
+        // Imports newer on-disk settings, then stores a native change only if the choice still matches expected.
+        int32_t SetIfWanted(std::string_view id, std::string_view expected, std::string_view value)
+        {
+            return SetValue(id, value, false, expected);
+        }
+
+    private:
+        int32_t SetValue(std::string_view id, std::string_view value, bool force, std::optional<std::string_view> expected)
+        {
             std::string settingId;
             bool effectChanged = false;
+            std::vector<std::string> diskChanges, diskEffects;
+            const auto result = [&]() -> int32_t
             {
                 std::lock_guard lock(mutex);
                 auto s = Find(id);
@@ -1889,6 +1903,22 @@ namespace asi_settings
                     return ASI_SETTINGS_UNKNOWN_ID;
                 if (!s->setting->HasValue())
                     return ASI_SETTINGS_UNSUPPORTED;
+                if (expected)
+                {
+                    if (FormatValue(*s) != *expected)
+                        return ASI_SETTINGS_NOT_NOW;
+                    const auto path = NewestCfg(storage);
+                    const auto source = ReadFileText(path);
+                    if (!source || source->empty())
+                        return ASI_SETTINGS_NOT_NOW;
+                    if (path != cfgPath || *source != cfgText)
+                    {
+                        ReloadLocked(&path, &*source, diskChanges, diskEffects);
+                        ++fileReloads;
+                        if (FormatValue(*s) != *expected)
+                            return ASI_SETTINGS_NOT_NOW;
+                    }
+                }
                 Slot candidate = *s;
                 if (!ParseValue(candidate, value, true))
                     return ASI_SETTINGS_INVALID_VALUE;
@@ -1899,13 +1929,18 @@ namespace asi_settings
                 settingId = s->setting->id;
                 SaveLocked();
                 effectChanged = UpdateEffective(*s);
-            }
+                return ASI_SETTINGS_OK;
+            }();
+            Apply(diskChanges, diskEffects);
+            if (result != ASI_SETTINGS_OK)
+                return result;
             if (effectChanged)
                 RunAppliers(settingId);
             Notify(settingId);
             return ASI_SETTINGS_OK;
         }
 
+    public:
         Preset CurrentPreset()
         {
             std::lock_guard lock(mutex);
@@ -2114,6 +2149,31 @@ namespace asi_settings
             SaveLocked();
         }
 
+        // Serialize a game's native profile writer with settings saves and retain its sections on the next save.
+        bool EditCfgFile(const std::function<bool(const std::filesystem::path&)>& edit)
+        {
+            std::vector<std::string> changed, effectChanged;
+            {
+                std::lock_guard lock(mutex);
+                if (CfgWriteTarget(storage) != cfgPath)
+                {
+                    SaveLocked();
+                    if (saveFailed)
+                        return false;
+                }
+                // Failed edits can have written a subset of their native keys.
+                pendingNativeRead = true;
+                if (!edit(cfgPath))
+                    return false;
+                auto source = ReadFileText(cfgPath);
+                if (!source)
+                    return false;
+                ReloadLocked(&cfgPath, &*source, changed, effectChanged);
+            }
+            Apply(changed, effectChanged);
+            return true;
+        }
+
         const AsiSettingsApi* Api()
         {
             static AsiSettingsApi api = {
@@ -2149,6 +2209,7 @@ namespace asi_settings
         int32_t nextToken = 1;
         bool loaded = false;
         bool saveFailed = false;
+        bool pendingNativeRead = false;
         std::string error;
         std::optional<CfgFile> lastFile;
         struct Check { std::function<bool(std::string_view)> usable; std::function<std::string()> reason; };
@@ -2257,6 +2318,7 @@ namespace asi_settings
 
         bool ReadCfgText(const std::string& source)
         {
+            pendingNativeRead = false;
             cfgText = source;
             lastFile = ParseCfg(source);
             bool complete = true;
@@ -2287,6 +2349,20 @@ namespace asi_settings
 
         void SaveLocked()
         {
+            // A native write succeeded but its result could not be read yet. Merge
+            // against that version before writing any live setting to disk.
+            if (pendingNativeRead)
+            {
+                auto source = ReadFileText(cfgPath);
+                if (!source)
+                {
+                    saveFailed = true;
+                    return;
+                }
+                lastFile = ParseCfg(*source);
+                cfgText = std::move(*source);
+                pendingNativeRead = false;
+            }
             Texts english = file.texts;
             english.Select("en");
             auto content = WriteCfg(file.description, english.Resolve(file.description.name), english, slots, lastFile ? &*lastFile : nullptr);
@@ -2309,18 +2385,24 @@ namespace asi_settings
         void ReloadLocked(const std::filesystem::path* path, const std::string* source, std::vector<std::string>& changed,
             std::vector<std::string>& effectChanged)
         {
+            std::optional<std::string> diskSource;
+            std::filesystem::path diskPath;
+            if (!source)
+            {
+                diskPath = NewestCfg(storage);
+                diskSource = ReadFileText(diskPath);
+                if (!diskSource)
+                    return;
+                path = &diskPath;
+                source = &*diskSource;
+            }
             std::vector<std::string> wanted;
             for (auto& s : slots)
                 wanted.push_back(FormatValue(s));
             for (auto& s : slots)
                 SetDefault(s);
-            if (source)
-            {
-                cfgPath = *path;
-                ReadCfgText(*source);
-            }
-            else
-                ReadCfg();
+            cfgPath = *path;
+            ReadCfgText(*source);
             for (size_t i = 0; i < slots.size(); ++i)
             {
                 bool effect = UpdateEffective(slots[i]);
