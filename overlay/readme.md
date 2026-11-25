@@ -1,10 +1,20 @@
 # In-game overlay
 
-A developer menu drawn inside the game (ImGui), opened with the fix's hotkey (Ctrl+F10) or Back + Start. It mirrors
-FusionFixHub: a tree of plugins and their pages on the left (the hub's order: the host first, then by priority),
-the page on the right, one line per setting. It is an editor in the sense of ASI Settings
+A developer menu drawn inside the game (ImGui), only in debug builds, opened with the fix's hotkey (Ctrl+F10) or
+Back + Start. It mirrors FusionFixHub: a tree of plugins and their pages on the left (the hub's order: the host
+first, then by priority), the page on the right, one line per setting. It is an editor in the sense of ASI Settings
 ([SPEC.md](../asi_settings/SPEC.md), Roles): values change only through each plugin's runtime interface; the settings
 file is only read, for the player's saved choice ("FSR (running: SMAA)").
+
+## Debug builds only
+
+The overlay exists only in builds that define `ASI_OVERLAY`; the fixes define it for their Debug configurations and
+compile and link ImGui only there. Without it, `Overlay.hpp`, `OverlayD3D9.hpp` and `OverlayD3D11.hpp` include
+`Disabled.hpp`: the same classes with empty inline functions (`IsOpen()`/`BlocksInput()` are constant `false`,
+`Present`, `Message`, `Gamepad` do nothing, `AddPage`/`AddRows`/`AddMenu` drop the draw function without calling it).
+So release builds have no ImGui, no hotkey or pad handling, no drawing and no supporter check, and code that registers
+pages needs no `#ifdef`. Code that calls ImGui itself, or hooks only to feed the overlay, goes inside
+`#ifdef ASI_OVERLAY`.
 
 The hotkey is `Overlay::hotkey` (a virtual-key code, default `VK_F10`) with `Overlay::hotkeyCtrl` (default `true`:
 Ctrl must be held).
@@ -22,20 +32,19 @@ game-wide preset in the game). Right-click a row (pad: Y) for Reset to default /
 Delete or the pad's X resets the focused setting. LB/RB (Ctrl+PgUp/PgDn) change pages, Ctrl+F searches.
 View menu: Show ids, expand/collapse groups, dark/light (default: Windows' app theme, like the hub).
 
-## Supporter feature
+## Supporter check
 
-The overlay is a Supporter feature. When it opens it reads `%LOCALAPPDATA%\FusionFixHub\supporter.token`, the token
-FusionFixHub keeps for a signed-in supporter (fusionfix.io signs it; the hub renews it whenever it runs and removes it
-on sign-out or when the support ends), and checks it offline (`Supporter.hpp`: ECDSA P-256 with the public keys in
-`supporter::Keys`, Windows' CNG loaded from System32 at the first open; expiry). Valid: the overlay as described here.
-Missing, changed, signed with another key or expired: a small panel instead, saying what the overlay is, how to get it
-(sign in to FusionFixHub; a button to the supporters page) and that settings can still be changed in the settings file
-with any text editor or in FusionFixHub's text editor. Nothing happens before the first open, and nothing goes online.
+When the overlay opens it reads `%LOCALAPPDATA%\FusionFixHub\supporter.token`, the token FusionFixHub keeps for a
+signed-in supporter (fusionfix.io signs it; the hub renews it whenever it runs and removes it on sign-out or when the
+support ends), and checks it offline (`Supporter.hpp`: ECDSA P-256 with the public keys in `supporter::Keys`, Windows'
+CNG loaded from System32 at the first open; expiry). Valid: the overlay as described here. Missing, changed, signed
+with another key or expired: a small panel instead, saying what the overlay is, how to get it (sign in to
+FusionFixHub; a button to the supporters page) and that settings can still be changed in the settings file with any
+text editor or in FusionFixHub's text editor. Nothing happens before the first open, and nothing goes online.
 
 - `Overlay::supporterFile` / `Overlay::supporterKeys`: where the token is and which keys sign it (tests set their own).
 - `ShowsSupporterPanel()`, `SupporterStatus()`: what the last open found.
-- Development and automation builds may define `ASI_OVERLAY_NO_SUPPORTER_CHECK`: the overlay opens without a token.
-  Release builds never define it.
+- Builds may define `ASI_OVERLAY_NO_SUPPORTER_CHECK`: the overlay opens without a token.
 - The token's format: the comment at the top of `Supporter.hpp`.
 
 ## Extending the overlay

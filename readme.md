@@ -12,7 +12,7 @@ GTAIV.EFLC.FusionFix and FusionFixHub.
 |---|---|---|
 | `include/` | `callbacks.h` (module load/unload callbacks, deferred init at `GetSystemTimeAsFileTime`), `gameref.hpp` (`GameRef`, `ProtectedGameRef`), `ModuleList.hpp`, `FileWatch.hpp` (Thomas Monkman's filewatch, MIT), `WindowStyle.hpp` (window modes: square corners, a bordered window at desktop size with its frame outside the screen) | injector + safetyhook, Hooking.Patterns (callbacks.h, gameref.hpp) |
 | `asi_settings/` | ASI Settings: `SPEC.md`, `asi_settings.h`, `asi_settings.hpp`, `asi_settings_json.hpp`, schema, example, `tools/validator.cpp`, tests | nothing |
-| `overlay/` | the in-game settings overlay, a developer menu fixes can extend (`Overlay.hpp`, `OverlayD3D9.hpp`, `OverlayD3D11.hpp`, `SettingsModel.hpp`, `Extensions.hpp`, `Supporter.hpp`; see `overlay/readme.md`) | Dear ImGui (the `imgui` submodule here) |
+| `overlay/` | the in-game settings overlay, a developer menu fixes can extend, in debug builds only (`Overlay.hpp`, `OverlayD3D9.hpp`, `OverlayD3D11.hpp`, `SettingsModel.hpp`, `Extensions.hpp`, `Supporter.hpp`; see `overlay/readme.md`) | Dear ImGui (the `imgui` submodule here) |
 | `automation/` | the dev-only automation plugin core and the frame-export contract (`asi_automation_frames.h`) | asi_settings |
 | `upscaler/` | the DLAA/FSR bridge to `FusionFixHub.exe --upscaler`, shared by the hub and the fixes that use it: `upscaler_bridge_protocol.h`, and the plugin side `upscaler_bridge_client.h` | nothing |
 | `upscaler/bridge/` | the hub's side of the bridge: `upscaler_bridge_server.h` (connection, no GPU), `upscaler_bridge.cpp/.h` (D3D12, DLSS, FSR), compiled into FusionFixHub.exe | NVIDIA NGX and AMD FidelityFX SDKs (the hub has them) |

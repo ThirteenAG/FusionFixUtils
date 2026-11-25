@@ -89,7 +89,9 @@ project "FusionFixUtilsTests"
    testdeps()
    files { deps .. "/injector/safetyhook/src/**.cpp", deps .. "/injector/zydis/Zydis.c" }
    files { deps .. "/hooking/Hooking.Patterns.cpp" }
-   -- ImGui without a renderer: the overlay's frames in a hidden window (tests/overlay.cpp)
+   -- ImGui without a renderer: the overlay's frames in a hidden window (tests/overlay.cpp); the fixes define
+   -- ASI_OVERLAY only in their debug builds, the tests always (StandaloneHeaders compiles the headers without it)
+   defines { "ASI_OVERLAY" }
    files { "imgui/imgui.cpp", "imgui/imgui_draw.cpp", "imgui/imgui_tables.cpp", "imgui/imgui_widgets.cpp", "imgui/backends/imgui_impl_win32.cpp" }
    filter { "files:" .. deps .. "/** or imgui/**" }
       warnings "Off"

@@ -1,7 +1,11 @@
 #pragma once
-#include "Overlay.hpp"
 #include <d3d11.h>
 #include <dxgi.h>
+// Only builds that define ASI_OVERLAY (debug builds) have the overlay; the others get empty stubs
+#ifndef ASI_OVERLAY
+#include "Disabled.hpp"
+#else
+#include "Overlay.hpp"
 #include "backends/imgui_impl_dx11.h"
 
 namespace asi_overlay
@@ -85,3 +89,4 @@ namespace asi_overlay
         ID3D11DeviceContext* immediate = nullptr;
     };
 }
+#endif

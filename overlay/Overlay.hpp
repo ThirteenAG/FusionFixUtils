@@ -1,4 +1,8 @@
 #pragma once
+// Only builds that define ASI_OVERLAY (debug builds) have the overlay; the others get empty stubs
+#ifndef ASI_OVERLAY
+#include "Disabled.hpp"
+#else
 #include "SettingsModel.hpp"
 #include "Extensions.hpp"
 #include "fonts/FallbackFont.hpp"
@@ -1062,3 +1066,4 @@ namespace asi_overlay
         }
     };
 }
+#endif

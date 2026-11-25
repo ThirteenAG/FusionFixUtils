@@ -1,6 +1,10 @@
 #pragma once
-#include "Overlay.hpp"
 #include <d3d9.h>
+// Only builds that define ASI_OVERLAY (debug builds) have the overlay; the others get empty stubs
+#ifndef ASI_OVERLAY
+#include "Disabled.hpp"
+#else
+#include "Overlay.hpp"
 #include <vector>
 #include "backends/imgui_impl_dx9.h"
 
@@ -161,3 +165,4 @@ namespace asi_overlay
         }
     };
 }
+#endif
