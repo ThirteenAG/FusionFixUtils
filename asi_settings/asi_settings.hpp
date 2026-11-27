@@ -608,23 +608,19 @@ namespace asi_settings
             if (data.empty())
                 return {};
             // VerQueryValue needs a writable copy and version.dll; the string table is searched directly instead
-            const wchar_t key[] = L"OriginalFilename";
-            auto begin = reinterpret_cast<const wchar_t*>(data.data());
-            size_t count = data.size() / sizeof(wchar_t);
-            for (size_t i = 0; i + std::size(key) < count; ++i)
-            {
-                if (std::wmemcmp(begin + i, key, std::size(key) - 1) != 0)
-                    continue;
-                size_t j = i + std::size(key);
-                while (j < count && begin[j] == 0)  // padding to the value
-                    ++j;
-                std::wstring value;
-                while (j < count && begin[j] != 0)
-                    value += begin[j++];
-                auto name = std::filesystem::path(value).stem().wstring();
-                return text::Narrow(name);
-            }
-            return {};
+            // Library searches only: a hand-written compare loop here was auto-vectorized by MSVC 14.5x with
+            // AVX instructions outside its CPU check, which crashed on CPUs without AVX
+            constexpr std::wstring_view key = L"OriginalFilename";
+            std::wstring_view table(reinterpret_cast<const wchar_t*>(data.data()), data.size() / sizeof(wchar_t));
+            auto i = table.find(key);
+            if (i == std::wstring_view::npos)
+                return {};
+            auto start = table.find_first_not_of(L'\0', i + key.size() + 1);  // padding to the value
+            if (start == std::wstring_view::npos)
+                return {};
+            auto value = table.substr(start, table.find(L'\0', start) - start);
+            auto name = std::filesystem::path(value).stem().wstring();
+            return text::Narrow(name);
         }
     }
 
